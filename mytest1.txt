@@ -1,0 +1,20 @@
+.h 1 Awesome title
+
+Awesome stuff boys
+
+.p
+
+Foo bar baz     qux
+
+.p
+
+ .c Awesome   content                    
+.c even   
+.c more  
+.c centered                             
+
+.l 10
+.w 11
+.b
+
+New content goes here
