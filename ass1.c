@@ -161,16 +161,16 @@ char *consume_whitespace(char *text) {
     return text;
 }
 
-char *process_word(char *line, state_t *state) {
+char *process_word(char *text, state_t *state) {
     maybe_break(state);
 
     /* lookahead to find the length of the next word */
-    char *word_start = line;
-    while(!isspace(*line) && *line != '\0') {
-        line++;
+    char *word_start = text;
+    while(!isspace(*text) && *text != '\0') {
+        text++;
     }
-    char *word_end = line;
-    int word_len = line - word_start;
+    char *word_end = text;
+    int word_len = text - word_start;
 
     /* check for word wrapping */
     if(state->current_width + word_len >= state->max_width) {
@@ -181,8 +181,8 @@ char *process_word(char *line, state_t *state) {
     }
 
     /* print the word */
-    for(line = word_start; line < word_end; line++) {
-        printf("%c", *line);
+    for(text = word_start; text < word_end; text++) {
+        printf("%c", *text);
     }
     state->current_width += word_len;
 
@@ -190,7 +190,7 @@ char *process_word(char *line, state_t *state) {
     state->suppressing_whitespace = false;
 
     /* now points to one char past the word */
-    return line;
+    return text;
 }
 
 int parse_int(char *text) {
