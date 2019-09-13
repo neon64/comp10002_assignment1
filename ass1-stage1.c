@@ -81,7 +81,7 @@ int get_line(line_t line) {
         c = wingetchar();
     }
 
-    // print to standard error instead
+    /* print to standard error instead */
     fprintf(stderr, "Line exceeded maximum line length of %d chars, aborting...\n", MAX_LINE_LENGTH);
     exit(EXIT_FAILURE);
 }
@@ -96,11 +96,12 @@ typedef struct {
 } state_t;
 
 void begin_line(state_t *state) {
-    for(int j = 0; j < state->left_margin; j++) {
+    int j;
+    for(j = 0; j < state->left_margin; j++) {
         printf(" ");
     }
     state->current_width = 0;
-    // we want the next word to be flush with the beginning of the line
+    /* we want the next word to be flush with the beginning of the line */
     state->suppressing_whitespace = true;
 }
 
@@ -121,14 +122,14 @@ int consume_space(int *i, char *line, state_t *state) {
 }
 
 int consume_word(int *i, char *line, state_t *state, bool wrap) {
-    // lookahead to find the length of the next word
+    /* lookahead to find the length of the next word */
     int word_start = *i;
     while(!isspace(line[*i]) && line[*i] != '\0') {
         (*i)++;
     }
     int word_len = *i - word_start;
 
-    // check for word wrapping
+    /* check for word wrapping */
     if(wrap && state->current_width + word_len >= state->max_width) {
         line_break(state);
     } else if(!state->suppressing_whitespace) {
@@ -136,16 +137,17 @@ int consume_word(int *i, char *line, state_t *state, bool wrap) {
         state->current_width += 1;
     }
 
-    // print the word
-    for(int k = word_start; k < *i; k++) {
+    /* print the word */
+    int k;
+    for(k = word_start; k < *i; k++) {
         printf("%c", line[k]);
     }
     state->current_width += word_len;
 
-    // we probably want to emit a space after this word (unless it is at the end of a line)
+    /* we probably want to emit a space after this word (unless it is at the end of a line) */
     state->suppressing_whitespace = false;
 
-    // how to avoid this second check?
+    /* how to avoid this second check? */
     if(line[*i] == '\0') {
         return END_OF_LINE;
     } else {
@@ -182,14 +184,15 @@ void process_line_body(char *text, state_t *state, bool wrap) {
 }
 
 void emit_heading_numbering(state_t *state, int level) {
-    // reset lower heading levels
-    for(int i = level; i < HEADING_LEVELS; i++) {
+    /* reset lower heading levels */
+    int i;
+    for(i = level; i < HEADING_LEVELS; i++) {
         state->headings[i] = LOWEST_HEADING_LEVEL - 1;
     }
 
     state->headings[level - 1] += 1;
-    // print out the heading
-    for(int i = 0; i < level; i++) {
+    /* print out the heading */
+    for(i = 0; i < level; i++) {
         printf("%d", state->headings[i]);
         if(i + 1 == level) {
             printf(" ");
@@ -209,8 +212,9 @@ void maybe_break(state_t *state) {
 
 void process_command(char command[], state_t *state) {
     if(command[0] == 'b') {
-        // this isn't exactly specified, however I've decided that
-        // a paragraph break should 'overrule' a line break.
+        /* this isn't exactly specified, however I've decided that
+         * a paragraph break should take the place of a line break.
+         */
         if(state->needs_break != PARAGRAPH_BREAK) {
             state->needs_break = LINE_BREAK;
         }
@@ -230,14 +234,16 @@ void process_command(char command[], state_t *state) {
         int len = strlen(text);
         if(len < state->max_width) {
             int offset = (state->max_width - len) / 2;
-            for(int i = 0; i < offset; i++) {
+            int i;
+            for(i = 0; i < offset; i++) {
                 printf(" ");
             }
         }
         printf("%s", text);
         state->needs_break = LINE_BREAK;
-    // this is fine given that the heading level n is only 1-5
     } else if(command[0] == 'h' && command[1] == ' ') {
+        /* since the heading level is only 1-5, we could assume that bytes is 1,
+         * however this way is more resillient with whitespace etc... */
         int level, bytes;
         int elements = sscanf(command + 1, "%d%n", &level, &bytes);
         if(elements == 0) {
@@ -246,7 +252,8 @@ void process_command(char command[], state_t *state) {
         assert(1 <= level && level <= HEADING_LEVELS);
         new_paragraph(state);
         if(level == 1) {
-            for(int i = 0; i < state->max_width; i++) {
+            int i;
+            for(i = 0; i < state->max_width; i++) {
                 printf("-");
             }
             line_break(state);
@@ -258,7 +265,7 @@ void process_command(char command[], state_t *state) {
 }
 
 void process_line(line_t line, state_t *state) {
-    // handle commands
+    /* handle commands */
     if(line[0] == '.') {
         process_command(line + 1, state);
         return;
@@ -271,9 +278,6 @@ void process_line(line_t line, state_t *state) {
 
 int main(int argc, char *argv[]) {
     line_t line;
-
-    int r;
-
     state_t state = {
         .suppressing_whitespace = false,
         .needs_break = false,
@@ -281,21 +285,21 @@ int main(int argc, char *argv[]) {
         .max_width = MAX_WIDTH,
         .current_width = 0
     };
-    for(int i = 0; i < HEADING_LEVELS; i++) {
+
+    int i;
+    for(i = 0; i < HEADING_LEVELS; i++) {
         state.headings[i] = LOWEST_HEADING_LEVEL - 1;
     }
 
     begin_line(&state);
 
-    while((r = get_line(line)) != EOF) {
+    while(get_line(line) != EOF) {
         process_line(line, &state);
     }
 
     printf("\n");
 
-	/* Your program to go here */
-
 	return 0;
 }
 
-// algorithms are fun!
+/* algorithms are fun! */
