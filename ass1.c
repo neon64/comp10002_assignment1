@@ -98,10 +98,6 @@ int get_line(line_t line) {
             } while(isspace(line[i]));
 
             line[i + 1] = '\0';
-            #if(DEBUG)
-                printf("\n[info] read line: '%s'\n", line);
-            #endif
-
             return c;
         }
         if(isspace(c)) {
@@ -124,6 +120,9 @@ void begin_line(state_t *state) {
     for(j = 0; j < state->left_margin; j++) {
         printf(" ");
     }
+    #if(DEBUG)
+        fprintf(stderr, "begin line\n");
+    #endif
     state->at_beginning = false;
     state->current_width = 0;
     /* we want the next word to be flush with the beginning of the line */
@@ -131,17 +130,28 @@ void begin_line(state_t *state) {
 }
 
 void line_break(state_t *state) {
+    #if(DEBUG)
+        fprintf(stderr, "line break\n");
+    #endif
     if(!state->at_beginning) {
         printf("\n");
+    } else {
+        #if(DEBUG)
+            fprintf(stderr, "still at beginning, suppressing break\n");
+        #endif
     }
     begin_line(state);
     state->needs_break = false;
 }
 
 void new_paragraph(state_t *state) {
+    #if(DEBUG)
+        fprintf(stderr, "paragraph break\n");
+    #endif    
     if(!state->at_beginning)  {
-        printf("\n\n");
+        printf("\n");
     }
+    printf("\n");
     begin_line(state);
     state->needs_break = false;
 }
@@ -203,7 +213,10 @@ int parse_int(char *text) {
 }
 
 void process_line_body(char *text, state_t *state) {
-    while(*text != '\0') {
+    #if(DEBUG)
+        fprintf(stderr, "text: '%s'\n", text);
+    #endif
+    while(*text != '\0') {  
         text = consume_whitespace(text);
         text = process_word(text, state);
     }
@@ -266,7 +279,7 @@ void process_command(char *command, state_t *state) {
         int width = parse_int(command_args);
         state->max_width = width;
         request_paragraph_break(state);
-    } else if(command[0] == 'c' && command[1] == ' ') {
+    } else if(command[0] == 'c') {
         request_line_break(state);
         maybe_break(state);
         /* skip the 'c ' */
@@ -279,9 +292,12 @@ void process_command(char *command, state_t *state) {
                 printf(" ");
             }
         }
+        #if(DEBUG)
+            fprintf(stderr, "outputting centered text: '%s'\n", text);
+        #endif
         printf("%s", text);
         request_line_break(state);
-    } else if(command[0] == 'h' && command[1] == ' ') {
+    } else if(command[0] == 'h') {
         /* since the heading level is only 1-5, we could assume that bytes is 1,
            however this way is more resillient at handling whitespace etc... */
         int level, skip_arg;
@@ -293,12 +309,19 @@ void process_command(char *command, state_t *state) {
         new_paragraph(state);
         emit_heading_numbering(state, level);
         char *body = consume_whitespace(command_args + skip_arg);
+        #if(DEBUG)
+            fprintf(stderr, "outputting heading %d: '%s'\n", level, body);
+        #endif
         printf("%s", body);
         request_paragraph_break(state);
     }
 }
 
 void process_line(line_t line, state_t *state) {
+    #if(DEBUG)
+        fprintf(stderr, "processing: '%s'\n", line);
+    #endif
+
     /* handle commands */
     if(line[0] == '.') {
         /* strips the dot before passing to `process_command` */
