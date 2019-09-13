@@ -58,9 +58,8 @@
 typedef char line_t[MAX_LINE_LENGTH + 1];
 
 typedef struct {
-    bool suppressing_whitespace;
-    int needs_break;
     bool at_beginning;
+    int needs_break;
     int left_margin;
     int max_width;
     int current_width;
@@ -93,6 +92,7 @@ int get_line(line_t line) {
         j++;
         char c = wingetchar();
         if(c == EOF || c == '\n') {
+            /* work backwards to trim trailing whitespace */
             do {
                 i--;
             } while(isspace(line[i]));
@@ -125,8 +125,6 @@ void begin_line(state_t *state) {
     #endif
     state->at_beginning = false;
     state->current_width = 0;
-    /* we want the next word to be flush with the beginning of the line */
-    state->suppressing_whitespace = true;
 }
 
 void line_break(state_t *state) {
@@ -148,10 +146,7 @@ void new_paragraph(state_t *state) {
     #if(DEBUG)
         fprintf(stderr, "paragraph break\n");
     #endif    
-    if(!state->at_beginning)  {
-        printf("\n");
-    }
-    printf("\n");
+    printf("\n\n");
     begin_line(state);
     state->needs_break = false;
 }
@@ -172,6 +167,8 @@ char *consume_whitespace(char *text) {
 }
 
 char *process_word(char *text, state_t *state) {
+    /* finally emit a line break from a previous command,
+       now that we are just about to output more text */
     maybe_break(state);
 
     /* lookahead to find the length of the next word */
@@ -182,10 +179,10 @@ char *process_word(char *text, state_t *state) {
     char *word_end = text;
     int word_len = text - word_start;
 
-    /* check for word wrapping */
+    /* wrap if needed, otherwise emit a space */
     if(state->current_width + word_len >= state->max_width) {
         line_break(state);
-    } else if(!state->suppressing_whitespace) {
+    } else if(state->current_width > 0) {
         printf(" ");
         state->current_width += 1;
     }
@@ -195,9 +192,6 @@ char *process_word(char *text, state_t *state) {
         printf("%c", *text);
     }
     state->current_width += word_len;
-
-    /* we probably want to emit a space after this word (unless it is at the end of a line) */
-    state->suppressing_whitespace = false;
 
     /* now points to one char past the word */
     return text;
@@ -282,8 +276,7 @@ void process_command(char *command, state_t *state) {
     } else if(command[0] == 'c') {
         request_line_break(state);
         maybe_break(state);
-        /* skip the 'c ' */
-        char *text = consume_whitespace(command + 1);
+        char *text = consume_whitespace(command_args);
         int len = strlen(text);
         if(len < state->max_width) {
             int offset = (state->max_width - len) / 2;
@@ -334,9 +327,11 @@ void process_line(line_t line, state_t *state) {
 int main(int argc, char *argv[]) {
     line_t line;
     state_t state = {
-        .suppressing_whitespace = false,
-        .needs_break = LINE_BREAK,
+        /* the combination of `at_beginning=true` and `needs_break=LINE_BREAK`
+           ensures that the first line of text has proper indentation, but also
+           that the there are no extraneous newlines at the top of the file. */
         .at_beginning = true,
+        .needs_break = LINE_BREAK,
         .left_margin = LEFT_MARGIN,
         .max_width = MAX_WIDTH,
         .current_width = 0,
