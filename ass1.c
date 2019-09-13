@@ -49,13 +49,11 @@
 #define BOTTOM_HEADING_LEVEL 5
 #define HEADING_LEVELS (BOTTOM_HEADING_LEVEL - TOP_HEADING_LEVEL + 1)
 
-#define WORD_WRAP_ENABLED true
-#define WORD_WRAP_DISABLED false
 #define END_OF_TOKEN -2
 #define END_OF_LINE -1
 #define PARAGRAPH_BREAK 1
 #define LINE_BREAK 2
-#define DEBUG 1
+#define DEBUG 0
 
 typedef char line_t[MAX_LINE_LENGTH + 1];
 
@@ -82,6 +80,12 @@ int wingetchar() {
     return c;
 }
 
+/**
+ * Get line retrieves one line of input, condenses all whitespace to
+ * a single space, and trims trailing whitespace.
+ * Whitespace at the start of the line is kept, however, as `.` commands
+ * must be at the beginning of the line.
+ */
 int get_line(line_t line) {
     int i = 0, j = 0;
     bool suppressing_whitespace = false;
@@ -97,6 +101,7 @@ int get_line(line_t line) {
             #if(DEBUG)
                 printf("\n[info] read line: '%s'\n", line);
             #endif
+
             return c;
         }
         if(isspace(c)) {
@@ -149,28 +154,26 @@ void maybe_break(state_t *state) {
     }
 }
 
-int consume_space(int *i, char *line, state_t *state) {
-    while(line[*i] != '\0') {
-        if(!isspace(line[*i])) {
-            return END_OF_TOKEN;
-        }
-        *i += 1;
+char *consume_whitespace(char *text) {
+    while(isspace(*text) && *text != '\0') {
+        text++;
     }
-    return END_OF_LINE;
+    return text;
 }
 
-int consume_word(int *i, char *line, state_t *state, bool wrap) {
+char *process_word(char *line, state_t *state) {
     maybe_break(state);
 
     /* lookahead to find the length of the next word */
-    int word_start = *i;
-    while(!isspace(line[*i]) && line[*i] != '\0') {
-        (*i)++;
+    char *word_start = line;
+    while(!isspace(*line) && *line != '\0') {
+        line++;
     }
-    int word_len = *i - word_start;
+    char *word_end = line;
+    int word_len = line - word_start;
 
     /* check for word wrapping */
-    if(wrap && state->current_width + word_len >= state->max_width) {
+    if(state->current_width + word_len >= state->max_width) {
         line_break(state);
     } else if(!state->suppressing_whitespace) {
         printf(" ");
@@ -178,21 +181,16 @@ int consume_word(int *i, char *line, state_t *state, bool wrap) {
     }
 
     /* print the word */
-    int k;
-    for(k = word_start; k < *i; k++) {
-        printf("%c", line[k]);
+    for(line = word_start; line < word_end; line++) {
+        printf("%c", *line);
     }
     state->current_width += word_len;
 
     /* we probably want to emit a space after this word (unless it is at the end of a line) */
     state->suppressing_whitespace = false;
 
-    /* how to avoid this second check? */
-    if(line[*i] == '\0') {
-        return END_OF_LINE;
-    } else {
-        return END_OF_TOKEN;
-    }
+    /* now points to one char past the word */
+    return line;
 }
 
 int parse_int(char *text) {
@@ -204,12 +202,10 @@ int parse_int(char *text) {
     return num;
 }
 
-void process_line_body(char *text, state_t *state, bool wrap) {
-    int i = 0;
-    while(true) {
-        if(consume_space(&i, text, state) == END_OF_LINE) { return; }
-
-        if(consume_word(&i, text, state, wrap) == END_OF_LINE) { return; }
+void process_line_body(char *text, state_t *state) {
+    while(*text != '\0') {
+        text = consume_whitespace(text);
+        text = process_word(text, state);
     }
 }
 
@@ -274,21 +270,8 @@ void process_command(char *command, state_t *state) {
         request_line_break(state);
         maybe_break(state);
         /* skip the 'c ' */
-        char *text = command + 2;
-        /* maybe trim whitespace upon reading in the lines, instead of here?? */
-        bool prev_space = true;
-        int len = 0, i;
-        for(i = 0; text[i] != '\0'; i++) {
-            if(isspace(text[i])) {
-                if(!prev_space && text[i + 1] != '\0') {
-                    len++;
-                    prev_space = true;
-                }
-            } else {
-                len++;
-                prev_space = false;
-            }
-        }
+        char *text = consume_whitespace(command + 1);
+        int len = strlen(text);
         if(len < state->max_width) {
             int offset = (state->max_width - len) / 2;
             int i;
@@ -296,18 +279,7 @@ void process_command(char *command, state_t *state) {
                 printf(" ");
             }
         }
-        prev_space = true;
-        for(i = 0; text[i] != '\0'; i++) {
-            if(isspace(text[i])) {
-                if(!prev_space && text[i + 1] != '\0') {
-                    printf("%c", text[i]);
-                    prev_space = true;
-                }
-            } else {
-                printf("%c", text[i]);
-                prev_space = false;
-            }
-        }
+        printf("%s", text);
         request_line_break(state);
     } else if(command[0] == 'h' && command[1] == ' ') {
         /* since the heading level is only 1-5, we could assume that bytes is 1,
@@ -320,8 +292,8 @@ void process_command(char *command, state_t *state) {
         assert(TOP_HEADING_LEVEL <= level && level <= BOTTOM_HEADING_LEVEL);
         new_paragraph(state);
         emit_heading_numbering(state, level);
-        char *body = command_args + skip_arg;
-        process_line_body(body, state, WORD_WRAP_DISABLED);
+        char *body = consume_whitespace(command_args + skip_arg);
+        printf("%s", body);
         request_paragraph_break(state);
     }
 }
@@ -332,7 +304,7 @@ void process_line(line_t line, state_t *state) {
         /* strips the dot before passing to `process_command` */
         process_command(line + 1, state);
     } else {
-        process_line_body(line, state, WORD_WRAP_ENABLED);
+        process_line_body(line, state);
     }
 }
 

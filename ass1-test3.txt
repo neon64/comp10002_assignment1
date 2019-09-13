@@ -1,4 +1,3 @@
-                                  
             Programming, Problem Solving, and Abstraction
                                With C
 
