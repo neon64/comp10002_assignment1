@@ -205,6 +205,7 @@ int parse_int(char *text) {
 
 void emit_heading_numbering(state_t *state, int level) {
     if(level == TOP_HEADING_LEVEL) {
+        /* print out the \hline of dashes */
         int i;
         for(i = 0; i < state->max_width; i++) {
             printf("-");
@@ -248,17 +249,21 @@ void process_command(char *command, state_t *state) {
         state->max_width = width;
         request_paragraph_break(state);
     } else if(command[0] == 'c') {
+        /* new line before the heading */
         request_line_break(state);
         maybe_break(state);
+
         char *text = consume_whitespace(command_args);
         int len = strlen(text);
+
+        /* centres the text if it is smaller than max_width */
         if(len < state->max_width) {
-            int offset = (state->max_width - len) / 2;
-            int i;
+            int i, offset = (state->max_width - len) / 2;
             for(i = 0; i < offset; i++) {
                 printf(" ");
             }
         }
+
         #if(DEBUG)
             fprintf(stderr, "outputting centered text: '%s'\n", text);
         #endif
@@ -273,14 +278,18 @@ void process_command(char *command, state_t *state) {
             fprintf(stderr, "Failed to parse heading level, aborting...\n");
         }
         assert(TOP_HEADING_LEVEL <= level && level <= BOTTOM_HEADING_LEVEL);
+
+        /* new paragraph before the heading */
         request_paragraph_break(state);
         maybe_break(state);
+
         emit_heading_numbering(state, level);
         char *body = consume_whitespace(command_args + skip_arg);
         #if(DEBUG)
             fprintf(stderr, "outputting heading %d: '%s'\n", level, body);
         #endif
         printf("%s", body);
+
         request_paragraph_break(state);
     }
 }
