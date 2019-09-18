@@ -70,7 +70,8 @@ typedef struct {
  * Attribution: Alistair Moffat
  * https://people.eng.unimelb.edu.au/ammoffat/teaching/10002/ass1/ass1.pdf
  *
- * Changes: function decl on one line as per my own preferred style, and renamed it
+ * Changes: function decl on one line as per my own preferred style, and
+ * renamed it
  */
 int wingetchar() {
     int c;
@@ -80,10 +81,9 @@ int wingetchar() {
 }
 
 /**
- * Get line retrieves one line of input, condenses all whitespace to
- * a single space, and trims trailing whitespace.
- * Whitespace at the start of the line is kept, however, as `.` commands
- * must be at the beginning of the line.
+ * Retrieves one line of input, trimming whitespace.
+ * Whitespace at the start of the line is kept, however, as we must
+ * be able to tell if `.` commands were at the beginning of the line.
  */
 int get_line(line_t line) {
     int i = 0, j = 0;
@@ -99,66 +99,62 @@ int get_line(line_t line) {
 
             line[i + 1] = '\0';
             return c;
-        }
-        if(isspace(c)) {
+        } else if(isspace(c)) {
+            /* only output one space in a row */
             if(!suppressing_whitespace) {
                 line[i++] = ' ';
                 suppressing_whitespace = true;
             }
-            continue;
+        } else {
+            suppressing_whitespace = false;
+            line[i++] = c;
         }
-        suppressing_whitespace = false;
-        line[i++] = c;
     }
 
     fprintf(stderr, "Line exceeded maximum line length of %d chars, aborting...\n", MAX_LINE_LENGTH);
-    exit(EXIT_FAILURE);    
+    exit(EXIT_FAILURE);
 }
 
+/* begins a line with a left margin */
 void begin_line(state_t *state) {
     int j;
     for(j = 0; j < state->left_margin; j++) {
         printf(" ");
     }
-    #if(DEBUG)
-        fprintf(stderr, "begin line\n");
-    #endif
     state->at_beginning = false;
     state->current_width = 0;
 }
 
-void line_break(state_t *state) {
-    #if(DEBUG)
-        fprintf(stderr, "line break\n");
-    #endif
-    if(!state->at_beginning) {
-        printf("\n");
-    } else {
-        #if(DEBUG)
-            fprintf(stderr, "still at beginning, suppressing break\n");
-        #endif
-    }
-    begin_line(state);
-    state->needs_break = false;
-}
-
-void new_paragraph(state_t *state) {
-    #if(DEBUG)
-        fprintf(stderr, "paragraph break\n");
-    #endif    
-    printf("\n\n");
-    begin_line(state);
-    state->needs_break = false;
-}
-
+/* emits line/paragraph breaks if they are needed and sets up margins etc... */
 void maybe_break(state_t *state) {
-    if(state->needs_break == PARAGRAPH_BREAK) {
-        new_paragraph(state);
+    if(state->needs_break == false) {
+        /* don't even add margins */
+        return;
+    } else if(state->at_beginning) {
+        /* don't emit any line breaks, but still add margins etc... */
+    } else if(state->needs_break == PARAGRAPH_BREAK) {
+        printf("\n\n");
     } else if(state->needs_break == LINE_BREAK) {
-        line_break(state);
+        printf("\n");
+    }
+
+    begin_line(state);
+    state->needs_break = false;
+}
+
+void request_line_break(state_t *state) {
+    /* don't 'downgrade' a paragraph break to a mere line break */
+    if(state->needs_break != PARAGRAPH_BREAK) {
+        state->needs_break = LINE_BREAK;
     }
 }
 
+void request_paragraph_break(state_t *state) {
+    /* line breaks are 'upgraded' to paragraph breaks */
+    state->needs_break = PARAGRAPH_BREAK;
+}
+
+/* increments text until a non whitespace char is reached */
 char *consume_whitespace(char *text) {
     while(isspace(*text) && *text != '\0') {
         text++;
@@ -181,7 +177,8 @@ char *process_word(char *text, state_t *state) {
 
     /* wrap if needed, otherwise emit a space */
     if(state->current_width + word_len >= state->max_width) {
-        line_break(state);
+        request_line_break(state);
+        maybe_break(state);
     } else if(state->current_width > 0) {
         printf(" ");
         state->current_width += 1;
@@ -206,23 +203,14 @@ int parse_int(char *text) {
     return num;
 }
 
-void process_line_body(char *text, state_t *state) {
-    #if(DEBUG)
-        fprintf(stderr, "text: '%s'\n", text);
-    #endif
-    while(*text != '\0') {  
-        text = consume_whitespace(text);
-        text = process_word(text, state);
-    }
-}
-
 void emit_heading_numbering(state_t *state, int level) {
     if(level == TOP_HEADING_LEVEL) {
         int i;
         for(i = 0; i < state->max_width; i++) {
             printf("-");
         }
-        line_break(state);
+        request_line_break(state);
+        maybe_break(state);
     }
 
     /* reset lower heading levels */
@@ -241,20 +229,6 @@ void emit_heading_numbering(state_t *state, int level) {
             printf(".");
         }
     }
-}
-
-void request_line_break(state_t *state) {
-    /* If a paragraph break is already set to appear, then don't
-       'downgrade' that to a mere line break.
-       */
-    if(state->needs_break != PARAGRAPH_BREAK) {
-        state->needs_break = LINE_BREAK;
-    }
-}
-
-void request_paragraph_break(state_t *state) {
-    /* Line breaks are 'upgraded' to paragraph breaks */
-    state->needs_break = PARAGRAPH_BREAK;
 }
 
 void process_command(char *command, state_t *state) {
@@ -299,7 +273,8 @@ void process_command(char *command, state_t *state) {
             fprintf(stderr, "Failed to parse heading level, aborting...\n");
         }
         assert(TOP_HEADING_LEVEL <= level && level <= BOTTOM_HEADING_LEVEL);
-        new_paragraph(state);
+        request_paragraph_break(state);
+        maybe_break(state);
         emit_heading_numbering(state, level);
         char *body = consume_whitespace(command_args + skip_arg);
         #if(DEBUG)
@@ -310,17 +285,23 @@ void process_command(char *command, state_t *state) {
     }
 }
 
+/* processes one line of the input text which will become 0 or more lines
+   of output text */
 void process_line(line_t line, state_t *state) {
     #if(DEBUG)
         fprintf(stderr, "processing: '%s'\n", line);
     #endif
 
-    /* handle commands */
     if(line[0] == '.') {
-        /* strips the dot before passing to `process_command` */
+        /* handle commands, stripping the dot off the command */
         process_command(line + 1, state);
     } else {
-        process_line_body(line, state);
+        char *cursor = line;
+        /* alternate between whitespace and words */
+        while(*cursor != '\0') {
+            cursor = consume_whitespace(cursor);
+            cursor = process_word(cursor, state);
+        }
     }
 }
 
@@ -336,7 +317,6 @@ int main(int argc, char *argv[]) {
         .max_width = MAX_WIDTH,
         .current_width = 0,
     };
-
     int i;
     for(i = 0; i < HEADING_LEVELS; i++) {
         state.headings[i] = TOP_HEADING_LEVEL - 1;
@@ -348,9 +328,19 @@ int main(int argc, char *argv[]) {
     /* don't forget to process the last line as well */
     process_line(line, &state);
 
+    /* newline at end of file */
     printf("\n");
 
 	return 0;
 }
 
-/* algorithms are fun! */
+/*
+    _____________________
+    < Algorithms are fun! >
+    ---------------------
+            \   ^__^
+            \  (oo)\_______
+                (__)\       )\/\
+                    ||----w |
+                    ||     ||
+*/
