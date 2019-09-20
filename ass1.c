@@ -48,6 +48,12 @@
 #define TOP_HEADING_LEVEL 1
 #define BOTTOM_HEADING_LEVEL 5
 #define HEADING_LEVELS (BOTTOM_HEADING_LEVEL - TOP_HEADING_LEVEL + 1)
+#define BREAK_CMD 'b'
+#define PARAGRAPH_CMD 'p'
+#define WIDTH_CMD 'w'
+#define LEFT_MARGIN_CMD 'l'
+#define CENTER_CMD 'c'
+#define HEADING_CMD 'h'
 
 #define END_OF_TOKEN -2
 #define END_OF_LINE -1
@@ -69,6 +75,24 @@ typedef struct {
     int current_width;
     int headings[HEADING_LEVELS];
 } state_t;
+
+int wingetchar();
+int parse_int(char *text);
+int get_line(line_t line);
+
+void begin_line(state_t *state);
+void maybe_break(state_t *state);
+void request_line_break(state_t *state);
+void request_paragraph_break(state_t *state);
+void request_paragraph_break(state_t *state);
+char *consume_whitespace(char *text);
+char *process_word(char *text, state_t *state);
+
+void emit_heading_numbering(state_t *state, int level);
+void process_center_command(char *command_args, state_t *state);
+void process_heading_command(char *command_args, state_t *state);
+void process_command(char *command, state_t *state);
+void process_line(line_t line, state_t *state);
 
 /**
  * Attribution: Alistair Moffat
@@ -235,76 +259,81 @@ void emit_heading_numbering(state_t *state, int level) {
     }
 }
 
+/* centers text in the middle of the output region */
+void process_center_command(char *command_args, state_t *state) {
+    /* new line before the heading */
+    request_line_break(state);
+    maybe_break(state);
+
+    char *text = consume_whitespace(command_args);
+    int len = strlen(text);
+
+    /* centres the text if it is smaller than max_width */
+    if(len < state->max_width) {
+        int i, offset = (state->max_width - len) / 2;
+        for(i = 0; i < offset; i++) {
+            printf(" ");
+        }
+    }
+
+    #if(DEBUG)
+        fprintf(stderr, "outputting centered text: '%s'\n", text);
+    #endif
+    printf("%s", text);
+    request_line_break(state);
+}
+
+/* emits a numbered heading, with breaks before and afterwards */
+void process_heading_command(char *command_args, state_t *state) {
+    /* since the heading level is only 1-5, we could assume that
+        `skip_arg` is 1, however this way is more resillient at handling
+        whitespace etc... */
+    int level, skip_arg;
+    int elements = sscanf(command_args, "%d%n", &level, &skip_arg);
+    if(elements == 0) {
+        fprintf(stderr, "Failed to parse heading level, aborting...\n");
+    }
+    assert(TOP_HEADING_LEVEL <= level && level <= BOTTOM_HEADING_LEVEL);
+
+    /* new paragraph before the heading */
+    request_paragraph_break(state);
+    maybe_break(state);
+
+    emit_heading_numbering(state, level);
+    char *body = consume_whitespace(command_args + skip_arg);
+    printf("%s", body);
+
+    request_paragraph_break(state);
+}
+
+/* processes a command, assuming the initial dot has already been
+   stripped from `command` */
 void process_command(char *command, state_t *state) {
     /* strips the single letter command name, to point to command arguments */
     char *command_args = command + 1;
 
-    if(command[0] == 'b') {
+    if(command[0] == BREAK_CMD) {
         request_line_break(state);
-    } else if(command[0] == 'p') {
+    } else if(command[0] == PARAGRAPH_CMD) {
         request_paragraph_break(state);
-    } else if(command[0] == 'l') {
+    } else if(command[0] == LEFT_MARGIN_CMD) {
         int margin = parse_int(command_args);
         state->left_margin = margin;
         request_paragraph_break(state);
-    } else if(command[0] == 'w') {
+    } else if(command[0] == WIDTH_CMD) {
         int width = parse_int(command_args);
         state->max_width = width;
         request_paragraph_break(state);
-    } else if(command[0] == 'c') {
-        /* new line before the heading */
-        request_line_break(state);
-        maybe_break(state);
-
-        char *text = consume_whitespace(command_args);
-        int len = strlen(text);
-
-        /* centres the text if it is smaller than max_width */
-        if(len < state->max_width) {
-            int i, offset = (state->max_width - len) / 2;
-            for(i = 0; i < offset; i++) {
-                printf(" ");
-            }
-        }
-
-        #if(DEBUG)
-            fprintf(stderr, "outputting centered text: '%s'\n", text);
-        #endif
-        printf("%s", text);
-        request_line_break(state);
-    } else if(command[0] == 'h') {
-        /* since the heading level is only 1-5, we could assume that
-           `skip_arg` is 1, however this way is more resillient at handling
-           whitespace etc... */
-        int level, skip_arg;
-        int elements = sscanf(command_args, "%d%n", &level, &skip_arg);
-        if(elements == 0) {
-            fprintf(stderr, "Failed to parse heading level, aborting...\n");
-        }
-        assert(TOP_HEADING_LEVEL <= level && level <= BOTTOM_HEADING_LEVEL);
-
-        /* new paragraph before the heading */
-        request_paragraph_break(state);
-        maybe_break(state);
-
-        emit_heading_numbering(state, level);
-        char *body = consume_whitespace(command_args + skip_arg);
-        #if(DEBUG)
-            fprintf(stderr, "outputting heading %d: '%s'\n", level, body);
-        #endif
-        printf("%s", body);
-
-        request_paragraph_break(state);
+    } else if(command[0] == CENTER_CMD) {
+        process_center_command(command_args, state);
+    } else if(command[0] == HEADING_CMD) {
+        process_heading_command(command_args, state);
     }
 }
 
 /* processes one line of the input text which will become 0 or more lines
    of output text */
 void process_line(line_t line, state_t *state) {
-    #if(DEBUG)
-        fprintf(stderr, "processing: '%s'\n", line);
-    #endif
-
     if(line[0] == '.') {
         /* handle commands, stripping the dot off the command */
         process_command(line + 1, state);
@@ -349,7 +378,7 @@ int main(int argc, char *argv[]) {
 
 /*
     _____________________
-    < Algorithms are fun! >
+    < algorithms are fun! >
     ---------------------
             \   ^__^
             \  (oo)\_______
