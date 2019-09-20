@@ -55,8 +55,12 @@
 #define LINE_BREAK 2
 #define DEBUG 0
 
+/* holds enough space for one line of input */
 typedef char line_t[MAX_LINE_LENGTH + 1];
 
+/* the document processor is stateful,
+   i.e.: it needs to keep track of things like margins, heading levels,
+   current width of the line etc... */
 typedef struct {
     bool at_beginning;
     int needs_break;
@@ -70,8 +74,7 @@ typedef struct {
  * Attribution: Alistair Moffat
  * https://people.eng.unimelb.edu.au/ammoffat/teaching/10002/ass1/ass1.pdf
  *
- * Changes: function decl on one line as per my own preferred style, and
- * renamed it
+ * Changed: renamed function, return type on same line as rest of definition.
  */
 int wingetchar() {
     int c;
@@ -82,7 +85,7 @@ int wingetchar() {
 
 /**
  * Retrieves one line of input, trimming whitespace.
- * Whitespace at the start of the line is kept, however, as we must
+ * However, whitespace at the start of the line is kept,  as we must
  * be able to tell if `.` commands were at the beginning of the line.
  */
 int get_line(line_t line) {
@@ -128,10 +131,10 @@ void begin_line(state_t *state) {
 /* emits line/paragraph breaks if they are needed and sets up margins etc... */
 void maybe_break(state_t *state) {
     if(state->needs_break == false) {
-        /* don't even add margins */
+        /* don't do anything at all */
         return;
     } else if(state->at_beginning) {
-        /* don't emit any line breaks, but still add margins etc... */
+        /* don't emit any line breaks, but still call `begin_line` etc.. */
     } else if(state->needs_break == PARAGRAPH_BREAK) {
         printf("\n\n");
     } else if(state->needs_break == LINE_BREAK) {
@@ -154,7 +157,7 @@ void request_paragraph_break(state_t *state) {
     state->needs_break = PARAGRAPH_BREAK;
 }
 
-/* increments text until a non whitespace char is reached */
+/* increments `text` until a non whitespace char is reached */
 char *consume_whitespace(char *text) {
     while(isspace(*text) && *text != '\0') {
         text++;
@@ -270,8 +273,9 @@ void process_command(char *command, state_t *state) {
         printf("%s", text);
         request_line_break(state);
     } else if(command[0] == 'h') {
-        /* since the heading level is only 1-5, we could assume that bytes is 1,
-           however this way is more resillient at handling whitespace etc... */
+        /* since the heading level is only 1-5, we could assume that
+           `skip_arg` is 1, however this way is more resillient at handling
+           whitespace etc... */
         int level, skip_arg;
         int elements = sscanf(command_args, "%d%n", &level, &skip_arg);
         if(elements == 0) {
