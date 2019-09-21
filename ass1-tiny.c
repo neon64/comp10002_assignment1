@@ -5,19 +5,13 @@
 
 int main(int argc, char *argv[]) {
     char line[MAX_CHARS + 1];
-    int col = 0;
-    int i, j, len;
+    int len, col = 0;
     printf("    ");
     while(fgets(line, MAX_CHARS + 1, stdin)) {
         if(line[0] == '.') { continue; }
-        i = 0;
-        char *word = strtok(line, " \r\n\t");
-        while(line[i] != '\0') {
-            while(isspace(line[i])) { i++; }
-            len = 0;
-            while(line[i + len] != '\0' && !isspace(line[i+len])) {
-                len += 1;
-            }
+        char *tok = line;
+        while((tok = strtok(tok, " \r\n\t"))) {
+            len = strlen(tok);
             if(col + len >= 50) {
                 printf("\n    ");
                 col = 0;
@@ -26,11 +20,9 @@ int main(int argc, char *argv[]) {
                 printf(" ");
                 col += 1;
             }
-            for(j = 0; j < len; j++) {
-                printf("%c", line[i+j]);
-            }
+            printf("%s", tok);
             col += len;
-            i += len;
+            tok = NULL;
         }
     }
     printf("\n");

@@ -120,9 +120,10 @@ int get_line(line_t line) {
         char c = wingetchar();
         if(c == EOF || c == '\n') {
             /* work backwards to trim trailing whitespace */
-            do {
+            i--;
+            while(isspace(line[i])) {
                 i--;
-            } while(isspace(line[i]));
+            }
 
             line[i + 1] = '\0';
             return c;
