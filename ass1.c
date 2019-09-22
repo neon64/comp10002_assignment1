@@ -262,7 +262,11 @@ void emit_heading_numbering(state_t *state, int level) {
 
 /* centers text in the middle of the output region */
 void process_center_command(char *command_args, state_t *state) {
-    /* new line before the heading */
+    /* Emits a newline before the heading.
+       This combination of two functions is used instead of outputting
+       a newline directly, in order to deal with situations like if
+       a line break has already been emitted, or if we are at the
+       start of the whole document. */
     request_line_break(state);
     maybe_break(state);
 
@@ -286,7 +290,7 @@ void process_center_command(char *command_args, state_t *state) {
 
 /* emits a numbered heading, with breaks before and afterwards */
 void process_heading_command(char *command_args, state_t *state) {
-    /* since the heading level is only 1-5, we could assume that
+    /* Since the heading level is only 1-5, we could assume that
         `skip_arg` is 1, however this way is more resillient at handling
         whitespace etc... */
     int level, skip_arg;
