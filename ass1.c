@@ -47,7 +47,6 @@
 #define MAX_WIDTH 50
 #define TOP_HEADING_LEVEL 1
 #define BOTTOM_HEADING_LEVEL 5
-#define HEADING_LEVELS (BOTTOM_HEADING_LEVEL - TOP_HEADING_LEVEL + 1)
 #define BREAK_CMD 'b'
 #define PARAGRAPH_CMD 'p'
 #define WIDTH_CMD 'w'
@@ -55,13 +54,12 @@
 #define CENTER_CMD 'c'
 #define HEADING_CMD 'h'
 
-#define END_OF_TOKEN -2
-#define END_OF_LINE -1
-#define PARAGRAPH_BREAK 1
-#define LINE_BREAK 2
+#define HEADING_LEVELS (BOTTOM_HEADING_LEVEL - TOP_HEADING_LEVEL + 1)
+#define LINE_BREAK 1
+#define PARAGRAPH_BREAK 2
 #define DEBUG 0
 
-/* holds enough space for one line of input */
+/* holds enough space for one line of input, including the null byte */
 typedef char line_t[MAX_LINE_LENGTH + 1];
 
 /* the document processor is stateful,
@@ -84,7 +82,6 @@ void begin_line(state_t *state);
 void maybe_break(state_t *state);
 void request_line_break(state_t *state);
 void request_paragraph_break(state_t *state);
-void request_paragraph_break(state_t *state);
 char *consume_whitespace(char *text);
 char *process_word(char *text, state_t *state);
 
@@ -93,6 +90,37 @@ void process_center_command(char *command_args, state_t *state);
 void process_heading_command(char *command_args, state_t *state);
 void process_command(char *command, state_t *state);
 void process_line(line_t line, state_t *state);
+
+int main(int argc, char *argv[]) {
+    line_t line;
+    state_t state = {
+        /* the combination of `at_beginning=true` and `needs_break=LINE_BREAK`
+           ensures that the first line of text has proper indentation, but also
+           that the there are no extraneous newlines at the top of the file. */
+        .at_beginning = true,
+        .needs_break = LINE_BREAK,
+        .left_margin = LEFT_MARGIN,
+        .max_width = MAX_WIDTH,
+        .current_width = 0,
+    };
+    int i;
+    for(i = 0; i < HEADING_LEVELS; i++) {
+        state.headings[i] = 0;
+    }
+
+    while(get_line(line) != EOF) {
+        process_line(line, &state);
+    }
+    /* Process the last input line as well - this shouldn't matter
+       since all the test input files have trailing newlines, but I would
+       prefer to handle it anyway. */
+    process_line(line, &state);
+
+    /* Newline at end of output */
+    printf("\n");
+
+	return 0;
+}
 
 /**
  * Attribution: Alistair Moffat
@@ -139,7 +167,10 @@ int get_line(line_t line) {
         }
     }
 
-    fprintf(stderr, "Line exceeded maximum line length of %d chars, aborting...\n", MAX_LINE_LENGTH);
+    fprintf(
+        stderr, "Line exceeded maximum line length of %d chars!\n",
+        MAX_LINE_LENGTH
+    );
     exit(EXIT_FAILURE);
 }
 
@@ -350,35 +381,6 @@ void process_line(line_t line, state_t *state) {
             cursor = process_word(cursor, state);
         }
     }
-}
-
-int main(int argc, char *argv[]) {
-    line_t line;
-    state_t state = {
-        /* the combination of `at_beginning=true` and `needs_break=LINE_BREAK`
-           ensures that the first line of text has proper indentation, but also
-           that the there are no extraneous newlines at the top of the file. */
-        .at_beginning = true,
-        .needs_break = LINE_BREAK,
-        .left_margin = LEFT_MARGIN,
-        .max_width = MAX_WIDTH,
-        .current_width = 0,
-    };
-    int i;
-    for(i = 0; i < HEADING_LEVELS; i++) {
-        state.headings[i] = TOP_HEADING_LEVEL - 1;
-    }
-
-    while(get_line(line) != EOF) {
-        process_line(line, &state);
-    }
-    /* don't forget to process the last line as well */
-    process_line(line, &state);
-
-    /* newline at end of file */
-    printf("\n");
-
-	return 0;
 }
 
 /*
