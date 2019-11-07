@@ -1,0 +1,52 @@
+.l 0
+1---5---10---15---20---25---30---35---40---45---50
+.l 10
+.w 40
+.c STAGE  THREE   TEST
+.c by
+.c The Grumpy Lecturer
+.c 1---5---10---15---20---25---30---35---40
+
+
+.h 1 Testing   The .h Command
+Ok, so that was a level one heading.
+
+.h 2 The .h command (again)
+
+And that was a level two heading.
+
+.h 2 The .h command (a third time)
+
+1---5---10---15---20---25---30---35---40
+And that was a second level two heading, it's all a bit boring really.
+
+.h 3 A third level heading
+
+.h 5 And straight away a fifth level heading
+
+.h 4 Followed by a fourth level heading
+
+.h 5 And then another fifth level heading
+
+It is all not just a bit boring, but actually really really boring
+-- this text should be in paragraph
+number 1.2.1.1.1, if I have counted correctly.
+And the lines should be not more than 40 characters long.
+1---5---10---15---20---25---30---35---40
+
+.h 1 The Last .h Command
+
+What else to say? It's hard creating these files of meaningless test data.
+It just gets so challenging to be creative.
+.c
+.c But Not Always!
+
+.h 1 The End of the Testing
+This test file doesn't change
+the left margin or the width, except at the beginning, before any of the output
+is generated (except that first overall ruler). It just explores the heading and centering commands that were a required part of a Stage Three program, using a
+ .l left margin of 10 and a .w width of 40.
+.c
+.c Maybe your program worked!
+1---5---10---15---20---25---30---35---40
+

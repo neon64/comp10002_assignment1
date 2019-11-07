@@ -1,0 +1,59 @@
+STAGE TWO TEST.
+.p
+Ok, so this test file contains some Stage Two commands.
+In Stage Two, students need to be able to deal with
+
+all of:
+.b
+ .b;
+.b
+ .p;
+.b
+ .l nn; and
+.b
+ .w nn.
+
+.p
+.p
+.p
+Repeated ".p" commands should result in a single new paragraph occurring;
+and the default left margin of 4 and the default width of 50 should be in operation, here is a ruler to help you check on that:
+1---5---10---15---20---25---30---35---40---45---50
+.l 15
+.l 10
+.l 2
+And repeated ".l" commands (like there just were in the input text) should result in a new left margin equal to the last of the values entered, without multiple paragraph breaks getting generated;
+this paragraph should have a two-character left margin,
+and still have a width of 50 characters, here is the ruler again:
+1---5---10---15---20---25---30---35---40---45---50
+.w 40
+Finally, if ".w" is used, the line width gets altered; this line should be
+in
+a
+paragraph with a width of 40 characters.
+
+So, to recap: at this point we should have a left margin of two characters, and up to 40 characters per line used by the text.
+Care to count, anyone? Here is a ruler to make use of...
+1---5---10---15---20---25---30---35---40
+.w 30
+And now, after another paragraph break, the lines
+
+
+			should     
+			be
+			thirty
+			characters
+			long, here is another ruler to let you check.
+.b
+1---5---10---15---20---25---30---35---40
+That ruler was preceded by a ".b" command, but there shouldn't be a blank line
+
+in front of it, even though it is a long token that exceeds the current line width.
+.p
+Ok, that's enough.
+Good luck with dealing with all of that Stage Two output.
+And hey, PS, note that there are no Stage Three commands in this test, so
+Stage Two and Stage Three programs will generate the same output.
+.p
+(But a Stage One program will have just given one very long paragraph for this input file.)
+

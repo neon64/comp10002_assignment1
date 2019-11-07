@@ -1,0 +1,62 @@
+1---5---10---15---20---25---30---35---40---45---50
+
+                      STAGE THREE TEST
+                             by
+                    The Grumpy Lecturer
+          1---5---10---15---20---25---30---35---40
+
+          ----------------------------------------
+          1 Testing The .h Command
+
+          Ok, so that was a level one heading.
+
+          1.1 The .h command (again)
+
+          And that was a level two heading.
+
+          1.2 The .h command (a third time)
+
+          1---5---10---15---20---25---30---35---40
+          And that was a second level two heading,
+          it's all a bit boring really.
+
+          1.2.1 A third level heading
+
+          1.2.1.0.1 And straight away a fifth level heading
+
+          1.2.1.1 Followed by a fourth level heading
+
+          1.2.1.1.1 And then another fifth level heading
+
+          It is all not just a bit boring, but
+          actually really really boring -- this
+          text should be in paragraph number
+          1.2.1.1.1, if I have counted correctly.
+          And the lines should be not more than 40
+          characters long.
+          1---5---10---15---20---25---30---35---40
+
+          ----------------------------------------
+          2 The Last .h Command
+
+          What else to say? It's hard creating
+          these files of meaningless test data. It
+          just gets so challenging to be creative.
+
+                      But Not Always!
+
+          ----------------------------------------
+          3 The End of the Testing
+
+          This test file doesn't change the left
+          margin or the width, except at the
+          beginning, before any of the output is
+          generated (except that first overall
+          ruler). It just explores the heading and
+          centering commands that were a required
+          part of a Stage Three program, using a
+          .l left margin of 10 and a .w width of
+          40.
+
+                 Maybe your program worked!
+          1---5---10---15---20---25---30---35---40

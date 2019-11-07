@@ -1,0 +1,26 @@
+STAGE
+ONE:
+
+This test data		mostly just  contains text 
+and whitespace,
+
+			and   no   formatting   commands.          
+Students who
+
+generate the right output for this test	file have a 
+program that meets the Stage 1 (or better) expectations.
+
+.x This text should not appear, as   it is in a line that starts with a .x, and should be discarded by a Stage One program.
+
+The 
+ .p
+command indicates a new paragraph, but only when the full-stop
+		is in column one, and only for a Stage Two program, and that ".p" wasn't in column one, so a ".p"
+		should
+		appear
+		in
+		the output.
+
+
+Cool, yes?!
+1---5---10---15---20---25---30---35---40---45---50

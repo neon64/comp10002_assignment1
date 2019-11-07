@@ -186,6 +186,9 @@ void begin_line(state_t *state) {
 
 /* emits line/paragraph breaks if they are needed and sets up margins etc... */
 void maybe_break(state_t *state) {
+    #if DEBUG
+        fprintf(stderr, "Maybe break with %d, at_Beginning = %d\n", state->needs_break, state->at_beginning);
+    #endif
     if(state->needs_break == false) {
         /* don't do anything at all */
         return;
@@ -225,6 +228,9 @@ char *process_word(char *text, state_t *state) {
     /* finally emit a line break from a previous command,
        now that we are just about to output more text */
     maybe_break(state);
+    #if DEBUG
+        fprintf(stderr, "Processing word in, %s\n", text);
+    #endif
 
     /* lookahead to find the length of the next word */
     char *word_start = text;
@@ -255,10 +261,10 @@ char *process_word(char *text, state_t *state) {
 
 int parse_int(char *text) {
     int num = atoi(text);
-    if(num == 0) {
+    /* if(num == 0) {
         fprintf(stderr, "Failed to parse integer '%s'\n", text);
         exit(EXIT_FAILURE);
-    }
+    } */
     return num;
 }
 
@@ -384,11 +390,11 @@ void process_line(line_t line, state_t *state) {
 }
 
 /*
-    _____________________
-    < algorithms are fun! >
-    ---------------------
+    ______________________
+    < algorithms are fun >
+    ----------------------
             \   ^__^
-            \  (oo)\_______
+             \  (oo)\_______
                 (__)\       )\/\
                     ||----w |
                     ||     ||

@@ -2,3 +2,6 @@ ass1
 rust_impl
 ass1-cpp
 .vscode
+feedback
+.idea
+cmake-build-debug
