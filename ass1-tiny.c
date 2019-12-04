@@ -3,6 +3,7 @@
 #include <string.h>
 #define MAX_CHARS 999
 
+/* a challenge to implement stage 1 in as few lines of code as possible */
 int main(int argc, char *argv[]) {
     char line[MAX_CHARS + 1];
     int len, col = 0;

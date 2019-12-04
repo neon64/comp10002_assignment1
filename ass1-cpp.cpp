@@ -3,6 +3,8 @@ using namespace std;
 #include <iostream>
 #include <sstream>
 
+/* an experiment to see how C++ features would change the implementation */
+
 typedef struct {
     unsigned int column;
     unsigned int max_width;
