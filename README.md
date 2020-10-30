@@ -11,3 +11,5 @@ Features included:
 - margins
 - line-breaks
 - paragraph-breaks
+
+**See also:** my [course notes](https://github.com/neon64/unimelb_lecture_notes/blob/svgs/comp10002/README.md) from the semester.
